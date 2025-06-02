@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import 'widgets/custom_app_bar.dart';
 import 'widgets/custom_bottom_nav.dart';
+import 'widgets/property_card.dart';
+import 'property_details_page.dart';
 
 class HomePage extends StatelessWidget {
+  final List<Map<String, dynamic>> properties = [
+    {
+      'imageUrl': 'https://via.placeholder.com/400x200',
+      'title': 'demo',
+      'location': 'Hyderabad, Telangana',
+      'description': 'testing',
+      'guests': 5,
+      'rooms': 5,
+      'price': 2000,
+      'oldPrice': 3000,
+      'discountPercent': 33,
+      'isFavorite': false,
+    },
+    // Add more properties here
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,13 +72,18 @@ class HomePage extends StatelessWidget {
           // Filter by Amenities
           Text('Filter by Amenities', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _amenityCard(Icons.pool, 'Swimming\npool'),
-              _amenityCard(Icons.music_note, 'Music\nsystem'),
-              _amenityCard(Icons.outdoor_grill, 'Barbecue\narea'),
-            ],
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _amenityCard(Icons.pool, 'Swimming\npool'),
+                SizedBox(width: 12),
+                _amenityCard(Icons.music_note, 'Music\nsystem'),
+                SizedBox(width: 12),
+                _amenityCard(Icons.outdoor_grill, 'Barbecue\narea'),
+                // Add more amenities here if needed
+              ],
+            ),
           ),
           SizedBox(height: 24),
           // Price Range
@@ -82,37 +105,61 @@ class HomePage extends StatelessWidget {
           // All Properties
           Text('All Properties', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
           SizedBox(height: 16),
-          // No properties found
-          Container(
-            padding: EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Column(
-              children: [
-                Text('No properties found', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
-                Text('Try adjusting your filters to see more results.', style: TextStyle(color: Colors.grey[600])),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          properties.isEmpty
+              ? Container(
+                  padding: EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Text('Reset Filters'),
+                  child: Column(
+                    children: [
+                      Text('No properties found', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      SizedBox(height: 8),
+                      Text('Try adjusting your filters to see more results.', style: TextStyle(color: Colors.grey[600])),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.pinkAccent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text('Reset Filters'),
+                      ),
+                    ],
+                  ),
+                )
+              : Column(
+                  children: properties
+                      .map((prop) => PropertyCard(
+                            imageUrl: prop['imageUrl'],
+                            title: prop['title'],
+                            location: prop['location'],
+                            description: prop['description'],
+                            guests: prop['guests'],
+                            rooms: prop['rooms'],
+                            price: prop['price'],
+                            oldPrice: prop['oldPrice'],
+                            discountPercent: prop['discountPercent'],
+                            isFavorite: prop['isFavorite'],
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => PropertyDetailsPage(property: prop),
+                                ),
+                              );
+                            },
+                          ))
+                      .toList(),
                 ),
-              ],
-            ),
-          ),
         ],
       ),
       bottomNavigationBar: CustomBottomNav(selectedIndex: 0),

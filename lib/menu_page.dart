@@ -22,12 +22,16 @@ class MenuPage extends StatelessWidget {
           ListTile(
             leading: Icon(Icons.login, color: Colors.teal),
             title: Text('Login'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, '/login');
+            },
           ),
           ListTile(
             leading: Icon(Icons.person_add, color: Colors.teal),
             title: Text('Sign Up'),
-            onTap: () {},
+            onTap: () {
+              Navigator.pushNamed(context, '/signup');
+            },
           ),
           Divider(height: 32),
           // Quick Links
@@ -36,7 +40,12 @@ class MenuPage extends StatelessWidget {
           ListTile(title: Text('Contact'), onTap: () {}),
           ListTile(title: Text('FAQ'), onTap: () {}),
           ListTile(title: Text('Blog'), onTap: () {}),
-          ListTile(title: Text('List Your Property'), onTap: () {}),
+          ListTile(
+            title: Text('List Your Property'),
+            onTap: () {
+              Navigator.pushNamed(context, '/host');
+            },
+          ),
           Divider(height: 32),
           // Legal
           Text('Legal', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),

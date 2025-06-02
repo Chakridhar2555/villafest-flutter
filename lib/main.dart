@@ -3,6 +3,8 @@ import 'splash_page.dart';
 import 'home_page.dart';
 import 'search_page.dart';
 import 'host_and_earn_page.dart';
+import 'login_page.dart';
+import 'signup_page.dart';
 
 void main() {
   runApp(VillaFestApp());
@@ -24,6 +26,8 @@ class VillaFestApp extends StatelessWidget {
         '/home': (_) => HomePage(),
         '/search': (_) => SearchPage(),
         '/host': (_) => HostAndEarnPage(),
+        '/login': (_) => LoginPage(),
+        '/signup': (_) => SignupPage(),
       },
     );
   }
