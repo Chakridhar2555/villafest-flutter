@@ -12,7 +12,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
       elevation: 0,
       leading: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: Image.asset('assets/villafest_logo.png'),
+        child: Image.asset('assets/images/villafest_logo.jpeg'),
       ),
       title: Text('Villafest', style: TextStyle(color: Colors.teal[900], fontWeight: FontWeight.bold)),
       actions: [
