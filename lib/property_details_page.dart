@@ -257,12 +257,12 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
           ),
           Divider(),
           Wrap(
-            spacing: 16,
-            runSpacing: 16,
+            spacing: 8,
+            runSpacing: 8,
             children:
                 amenities.map((amenity) {
                   return Container(
-                    padding: EdgeInsets.all(12),
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.grey[100],
                       borderRadius: BorderRadius.circular(12),
@@ -272,14 +272,20 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
                       children: [
                         Image.network(
                           '${dotenv.env['SERVER_URL']}${amenity['iconUrl']}',
-                          height: 24,
-                          width: 24,
+                          height: 20,
+                          width: 20,
                           errorBuilder: (context, error, stackTrace) {
-                            return Icon(Icons.error, size: 24);
+                            return Icon(Icons.error, size: 20);
                           },
                         ),
-                        SizedBox(width: 8),
-                        Text(amenity['name']),
+                        SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            amenity['name'],
+                            style: TextStyle(fontSize: 13),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                       ],
                     ),
                   );

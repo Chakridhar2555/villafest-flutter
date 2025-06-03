@@ -34,7 +34,14 @@ class _LoginPageState extends State<LoginPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Welcome to Villafest', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFF00796B))),
+                Text(
+                  'Welcome to Villafest',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF00796B),
+                  ),
+                ),
                 SizedBox(height: 24),
                 TextField(
                   decoration: InputDecoration(
@@ -63,8 +70,17 @@ class _LoginPageState extends State<LoginPage> {
                       borderSide: BorderSide(color: Colors.red),
                     ),
                     suffix: GestureDetector(
-                      onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-                      child: Text(_obscurePassword ? 'Show' : 'Hide', style: TextStyle(color: Colors.teal, fontWeight: FontWeight.bold)),
+                      onTap:
+                          () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                      child: Text(
+                        _obscurePassword ? 'Show' : 'Hide',
+                        style: TextStyle(
+                          color: Colors.teal,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -75,10 +91,15 @@ class _LoginPageState extends State<LoginPage> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Color(0xFF00796B),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     onPressed: () {},
-                    child: Text('Continue', style: TextStyle(fontSize: 20)),
+                    child: Text(
+                      'Login',
+                      style: TextStyle(fontSize: 20, color: Colors.white),
+                    ),
                   ),
                 ),
                 SizedBox(height: 24),
@@ -97,11 +118,16 @@ class _LoginPageState extends State<LoginPage> {
                   width: double.infinity,
                   height: 56,
                   child: OutlinedButton.icon(
-                    icon: Image.asset('assets/google_logo.png', height: 24), // Add your Google logo asset
-                    label: Text('Continue with Google', style: TextStyle(fontSize: 18, color: Colors.black87)),
+                    icon: Image.asset('assets/google_logo.png', height: 24),
+                    label: Text(
+                      'Continue with Google',
+                      style: TextStyle(fontSize: 18, color: Colors.black),
+                    ),
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Colors.teal.shade200),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     onPressed: () {},
                   ),
@@ -116,7 +142,13 @@ class _LoginPageState extends State<LoginPage> {
                           onTap: () {
                             Navigator.pushNamed(context, '/signup');
                           },
-                          child: Text('Sign up', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+                          child: Text(
+                            'Sign up',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -130,4 +162,4 @@ class _LoginPageState extends State<LoginPage> {
       bottomNavigationBar: CustomBottomNav(selectedIndex: 1),
     );
   }
-} 
+}
