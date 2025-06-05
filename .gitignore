@@ -1,45 +1,161 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
+# ------------------------
+# OS-specific files
+# ------------------------
 .DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
 
-# IntelliJ related
+# ------------------------
+# IDE-specific files
+# ------------------------
+
+# IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
+*.hprof
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# VS Code (uncomment if you don't want to track it)
+# .vscode/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
+# Xcode
+*.xcuserstate
+*.xcworkspace
+*.xccheckout
+*.moved-aside
+*.xcuserdatad/
+*.xcsettings
+*.xcodeproj/
+
+# ------------------------
+# Flutter / Dart / Pub
+# ------------------------
 .dart_tool/
 .flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
-/build/
+build/
+.melody_tool/
+.melos_tool/
+.dart_server/
 
-# Symbolication related
+# API docs
+doc/api/
+
+# Flutter build id
+ios/Flutter/.last_build_id
+
+# Coverage
+coverage/
+
+# ------------------------
+# Android
+# ------------------------
+android/.gradle/
+android/app/build/
+android/build/
+*.jks
+*.keystore
+*.apk
+*.ap_
+
+# Gradle
+.gradle/
+**/gradle-wrapper.jar
+gradle-wrapper.properties
+gradle-wrapper.jar
+gradle.properties
+gradlew
+gradlew.bat
+local.properties
+
+# ------------------------
+# iOS
+# ------------------------
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/Generated.xcconfig
+ios/Flutter/App.framework
+ios/Flutter/engine/
+ios/.dart_tool/
+ios/Runner.xcworkspace/
+
+# ------------------------
+# Web
+# ------------------------
+web/.dart_tool/
+web/build/
+
+# ------------------------
+# Desktop (Linux / Windows / macOS)
+# ------------------------
+linux/
+linux/flutter/
+macos/
+windows/
+windows/flutter/
+
+*.exe
+*.dll
+*.dmg
+*.iso
+*.pdb
+*.obj
+*.so
+*.a
+*.out
+*.deb
+*.AppImage
+*.snap
+*.rpm
+*.tar.gz
+*.lock
+
+# Linux specific hidden files and temp
+*~
+.nfs*
+.cache/
+.goutputstream-*
+.Trash-*/
+lost+found/
+
+# ------------------------
+# Logs and temp files
+# ------------------------
+*.log
+*.tmp
+*.swp
+*.swo
+*.bak
+*.old
+
+# ------------------------
+# Python/C++/other generated
+# ------------------------
+*.pyc
+*.pyo
+*.class
+*.out
+
+# ------------------------
+# Symbolication / Obfuscation
+# ------------------------
 app.*.symbols
-
-# Obfuscation related
 app.*.map.json
 
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# ------------------------
+# Miscellaneous
+# ------------------------
+migrate_working_dir/
+.build/
+.buildlog/
+.history
+.atom/
+.svn/

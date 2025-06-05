@@ -9,9 +9,10 @@ class PropertyCard extends StatelessWidget {
   final int rooms;
   final int price;
   final int? oldPrice;
-  final int? discountPercent;
+  final int discountPercent;
   final bool isFavorite;
-  final VoidCallback? onTap;
+  final VoidCallback onTap;
+  final List<String> additionalImages;
 
   const PropertyCard({
     Key? key,
@@ -23,133 +24,218 @@ class PropertyCard extends StatelessWidget {
     required this.rooms,
     required this.price,
     this.oldPrice,
-    this.discountPercent,
-    this.isFavorite = false,
-    this.onTap,
+    required this.discountPercent,
+    required this.isFavorite,
+    required this.onTap,
+    this.additionalImages = const [],
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // Combine main image and additional images
+    final allImages = [imageUrl, ...additionalImages];
+
     return GestureDetector(
       onTap: onTap,
-      child: Card(
-        margin: EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        elevation: 2,
+      child: Container(
+        margin: EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image and favorite icon
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                  child: Image.network(
-                    imageUrl,
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      height: 160,
-                      color: Colors.grey[200],
-                      child: Center(child: Text('demo')),
-                    ),
+            // Image Carousel
+            Container(
+              height: 200,
+              child: Stack(
+                children: [
+                  // Image PageView
+                  PageView.builder(
+                    itemCount: allImages.length,
+                    itemBuilder: (context, index) {
+                      return ClipRRect(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(16),
+                        ),
+                        child: Image.network(
+                          allImages[index],
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                          ? loadingProgress
+                                                  .cumulativeBytesLoaded /
+                                              loadingProgress
+                                                  .expectedTotalBytes!
+                                          : null,
+                                ),
+                              ),
+                            );
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            print('Error loading image: ${allImages[index]}');
+                            print('Error: $error');
+                            return Container(
+                              height: 200,
+                              color: Colors.grey[200],
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: 40,
+                                      color: Colors.grey[400],
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      'Failed to load image',
+                                      style: TextStyle(
+                                        color: Colors.grey[600],
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: CircleAvatar(
-                    backgroundColor: Colors.white,
-                    child: Icon(
-                      isFavorite ? Icons.favorite : Icons.favorite_border,
-                      color: Colors.black,
+                  // Image Count Indicator
+                  if (allImages.length > 1)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '1/${allImages.length}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-            // Details
             Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: LinearGradient(
-                        colors: [Colors.blueAccent, Colors.purpleAccent],
-                      ),
-                    ),
-                    child: Text(
-                      title,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: Colors.black87),
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(location, style: TextStyle(color: Colors.black54)),
-                  ),
-                  SizedBox(height: 8),
-                  Text(description, style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 8),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(Icons.people, size: 18, color: Colors.blueGrey),
-                      SizedBox(width: 4),
-                      Text('$guests guests'),
-                      SizedBox(width: 12),
-                      Icon(Icons.bed, size: 18, color: Colors.brown),
-                      SizedBox(width: 4),
-                      Text('$rooms rooms'),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      if (oldPrice != null)
-                        Text(
-                          '₹${oldPrice!}',
+                      Expanded(
+                        child: Text(
+                          title,
                           style: TextStyle(
-                            decoration: TextDecoration.lineThrough,
-                            color: Colors.grey,
-                            fontSize: 16,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      if (oldPrice != null) SizedBox(width: 8),
+                      ),
+                      Icon(
+                        isFavorite ? Icons.favorite : Icons.favorite_border,
+                        color: isFavorite ? Colors.red : Colors.grey,
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    location,
+                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: Colors.grey[800], fontSize: 14),
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Icon(Icons.people, size: 16, color: Colors.grey[600]),
+                      SizedBox(width: 4),
+                      Text(
+                        '$guests guests',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                      SizedBox(width: 16),
+                      Icon(
+                        Icons.door_sliding,
+                        size: 16,
+                        color: Colors.grey[600],
+                      ),
+                      SizedBox(width: 4),
+                      Text(
+                        '$rooms rooms',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 12),
+                  Row(
+                    children: [
                       Text(
                         '₹$price',
                         style: TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          fontSize: 22,
-                          color: Colors.black87,
+                          color: Colors.teal[700],
                         ),
                       ),
-                      Text(' / night', style: TextStyle(fontSize: 16)),
+                      if (oldPrice != null) ...[
+                        SizedBox(width: 8),
+                        Text(
+                          '₹$oldPrice',
+                          style: TextStyle(
+                            decoration: TextDecoration.lineThrough,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '$discountPercent% off',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
-                  if (discountPercent != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red[50],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          '$discountPercent% OFF',
-                          style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ),
                 ],
               ),
             ),
@@ -158,4 +244,4 @@ class PropertyCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -23,7 +23,7 @@ class _SplashPageState extends State<SplashPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Image.asset('assets/villafest_logo.png', width: 80),
+            Image.asset('assets/images/villafest_logo.jpeg', width: 200),
             SizedBox(height: 20),
             Text(
               'Villafest',
@@ -39,4 +39,4 @@ class _SplashPageState extends State<SplashPage> {
       ),
     );
   }
-} 
+}
