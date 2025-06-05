@@ -97,8 +97,11 @@ web/build/
 # Desktop (Linux / Windows / macOS)
 # ------------------------
 linux/
+linux/flutter/
 macos/
 windows/
+windows/flutter/
+
 *.exe
 *.dll
 *.dmg
