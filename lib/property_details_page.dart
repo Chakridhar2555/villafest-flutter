@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:table_calendar/table_calendar.dart';
 import 'dart:convert';
 import 'widgets/custom_app_bar.dart';
 import 'widgets/custom_bottom_nav.dart';
@@ -22,6 +23,15 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
   String? error;
   GoogleMapController? mapController;
   Set<Marker> markers = {};
+  
+  // Calendar related variables
+  CalendarFormat _calendarFormat = CalendarFormat.month;
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+  DateTime? _rangeStart;
+  DateTime? _rangeEnd;
+  RangeSelectionMode _rangeSelectionMode = RangeSelectionMode.toggledOn;
+  Map<DateTime, List<String>> _events = {};
 
   @override
   void initState() {
@@ -292,6 +302,175 @@ class _PropertyDetailsPageState extends State<PropertyDetailsPage> {
                 }).toList(),
           ),
           SizedBox(height: 24),
+
+          // Add Calendar Section
+          SizedBox(height: 24),
+          Text(
+            'Select Dates',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          Divider(),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 8,
+                  offset: Offset(0, 2),
+                ),
+              ],
+            ),
+            child: TableCalendar(
+              firstDay: DateTime.now(),
+              lastDay: DateTime.now().add(Duration(days: 365)),
+              focusedDay: _focusedDay,
+              calendarFormat: _calendarFormat,
+              selectedDayPredicate: (day) {
+                return isSameDay(_selectedDay, day);
+              },
+              rangeStartDay: _rangeStart,
+              rangeEndDay: _rangeEnd,
+              rangeSelectionMode: _rangeSelectionMode,
+              eventLoader: (day) {
+                return _events[day] ?? [];
+              },
+              startingDayOfWeek: StartingDayOfWeek.monday,
+              calendarStyle: CalendarStyle(
+                outsideDaysVisible: false,
+                weekendTextStyle: TextStyle(color: Colors.red),
+                holidayTextStyle: TextStyle(color: Colors.red),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.teal[700],
+                  shape: BoxShape.circle,
+                ),
+                todayDecoration: BoxDecoration(
+                  color: Colors.teal[100],
+                  shape: BoxShape.circle,
+                ),
+                rangeStartDecoration: BoxDecoration(
+                  color: Colors.teal[700],
+                  shape: BoxShape.circle,
+                ),
+                rangeEndDecoration: BoxDecoration(
+                  color: Colors.teal[700],
+                  shape: BoxShape.circle,
+                ),
+                withinRangeDecoration: BoxDecoration(
+                  color: Colors.teal[100],
+                  shape: BoxShape.circle,
+                ),
+              ),
+              onDaySelected: (selectedDay, focusedDay) {
+                if (!isSameDay(_selectedDay, selectedDay)) {
+                  setState(() {
+                    _selectedDay = selectedDay;
+                    _focusedDay = focusedDay;
+                    _rangeStart = null;
+                    _rangeEnd = null;
+                    _rangeSelectionMode = RangeSelectionMode.toggledOff;
+                  });
+                }
+              },
+              onRangeSelected: (start, end, focusedDay) {
+                setState(() {
+                  _selectedDay = null;
+                  _focusedDay = focusedDay;
+                  _rangeStart = start;
+                  _rangeEnd = end;
+                  _rangeSelectionMode = RangeSelectionMode.toggledOn;
+                });
+              },
+              onFormatChanged: (format) {
+                setState(() {
+                  _calendarFormat = format;
+                });
+              },
+              onPageChanged: (focusedDay) {
+                _focusedDay = focusedDay;
+              },
+            ),
+          ),
+          SizedBox(height: 16),
+          if (_rangeStart != null && _rangeEnd != null)
+            Container(
+              padding: EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.teal[50],
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Selected Dates',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Check-in: ${_rangeStart!.day}/${_rangeStart!.month}/${_rangeStart!.year}',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  Text(
+                    'Check-out: ${_rangeEnd!.day}/${_rangeEnd!.month}/${_rangeEnd!.year}',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Total Nights: ${_rangeEnd!.difference(_rangeStart!).inDays}',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Total Price: ₹${property['price'] * _rangeEnd!.difference(_rangeStart!).inDays}',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal[700],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 56,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal[700],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              onPressed: (_rangeStart != null && _rangeEnd != null)
+                  ? () {
+                      // TODO: Implement booking logic
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Booking functionality coming soon!'),
+                          backgroundColor: Colors.teal[700],
+                        ),
+                      );
+                    }
+                  : null,
+              child: Text(
+                'Book Now',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
       bottomNavigationBar: CustomBottomNav(selectedIndex: 0),
