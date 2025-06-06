@@ -4,6 +4,9 @@ import 'widgets/custom_bottom_nav.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:google_places_flutter/google_places_flutter.dart';
+import 'package:google_places_flutter/model/prediction.dart';
+import 'package:geolocator/geolocator.dart';
 
 class HostAndEarnPage extends StatefulWidget {
   @override
@@ -44,6 +47,11 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
   GoogleMapController? _mapController;
   bool _isLoadingLocation = false;
 
+  // Add search controller
+  final TextEditingController _searchController = TextEditingController();
+  List<Prediction> _predictions = [];
+  bool _isSearching = false;
+
   @override
   void dispose() {
     _addressController.dispose();
@@ -53,6 +61,7 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
     _countryController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -126,6 +135,83 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
       setState(() {
         _isLoadingLocation = false;
       });
+    }
+  }
+
+  Future<void> _getCurrentLocation() async {
+    try {
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high
+      );
+      _fetchLocationFromCoordinates(position.latitude, position.longitude);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting current location: $e')),
+      );
+    }
+  }
+
+  Future<void> _searchLocation(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _predictions = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://maps.googleapis.com/maps/api/place/autocomplete/json?input=$query&key=AIzaSyCG2BQGrVtCdsTsJKbliP4J9Qxwl9szVT0'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'OK') {
+          setState(() {
+            _predictions = (data['predictions'] as List)
+                .map((prediction) => Prediction.fromJson(prediction))
+                .toList();
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error searching locations: $e')),
+      );
+    } finally {
+      setState(() {
+        _isSearching = false;
+      });
+    }
+  }
+
+  Future<void> _getPlaceDetails(String placeId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&key=AIzaSyCG2BQGrVtCdsTsJKbliP4J9Qxwl9szVT0'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'OK') {
+          final result = data['result'];
+          final location = result['geometry']['location'];
+          final lat = location['lat'];
+          final lng = location['lng'];
+          
+          _fetchLocationFromCoordinates(lat, lng);
+          _searchController.text = result['formatted_address'];
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error getting place details: $e')),
+      );
     }
   }
 
@@ -255,6 +341,62 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Location Details', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          SizedBox(height: 24),
+          
+          // Add search bar
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Search for a location',
+              prefixIcon: Icon(Icons.search),
+              suffixIcon: IconButton(
+                icon: Icon(Icons.my_location),
+                onPressed: _getCurrentLocation,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onChanged: _searchLocation,
+          ),
+          
+          // Show predictions
+          if (_isSearching)
+            Center(child: CircularProgressIndicator())
+          else if (_predictions.isNotEmpty)
+            Container(
+              margin: EdgeInsets.only(top: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: ListView.builder(
+                shrinkWrap: true,
+                padding: EdgeInsets.zero,
+                itemCount: _predictions.length,
+                itemBuilder: (context, index) {
+                  final prediction = _predictions[index];
+                  return ListTile(
+                    leading: Icon(Icons.location_on),
+                    title: Text(prediction.description ?? ''),
+                    onTap: () {
+                      _getPlaceDetails(prediction.placeId ?? '');
+                      setState(() {
+                        _predictions = [];
+                      });
+                    },
+                  );
+                },
+              ),
+            ),
+          
           SizedBox(height: 24),
           _formField('Address', 'Street address', true, controller: _addressController),
           SizedBox(height: 16),

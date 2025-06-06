@@ -41,6 +41,8 @@ dependencies:
   url_launcher: ^6.2.4
   fluttertoast: ^8.2.4
   table_calendar: ^3.0.9
+  google_places_flutter: ^2.0.6
+  geolocator: ^11.0.0
 
 dev_dependencies:
   flutter_test:
