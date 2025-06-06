@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'widgets/custom_app_bar.dart';
 import 'widgets/custom_bottom_nav.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class HostAndEarnPage extends StatefulWidget {
   @override
@@ -28,18 +30,103 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
   final List<String> _selectedRules = [];
   final TextEditingController _customRulesController = TextEditingController();
 
-  // Add controllers for latitude and longitude
+  // Add controllers for address fields
+  final TextEditingController _addressController = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
+  final TextEditingController _postalCodeController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController();
   final TextEditingController _latitudeController = TextEditingController();
   final TextEditingController _longitudeController = TextEditingController();
+
   // Add map state
   LatLng? _selectedLatLng;
   GoogleMapController? _mapController;
+  bool _isLoadingLocation = false;
 
   @override
   void dispose() {
+    _addressController.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _postalCodeController.dispose();
+    _countryController.dispose();
     _latitudeController.dispose();
     _longitudeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchLocationFromCoordinates(double lat, double lng) async {
+    setState(() {
+      _isLoadingLocation = true;
+    });
+
+    try {
+      // Update map camera position
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(lat, lng),
+              zoom: 15, // Increased zoom level for better detail
+            ),
+          ),
+        );
+      }
+
+      final response = await http.get(
+        Uri.parse('https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=AIzaSyCG2BQGrVtCdsTsJKbliP4J9Qxwl9szVT0'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['status'] == 'OK' && data['results'].isNotEmpty) {
+          final result = data['results'][0];
+          final addressComponents = result['address_components'];
+          
+          String streetNumber = '';
+          String route = '';
+          String city = '';
+          String state = '';
+          String postalCode = '';
+          String country = '';
+
+          for (var component in addressComponents) {
+            final types = List<String>.from(component['types']);
+            if (types.contains('street_number')) {
+              streetNumber = component['long_name'];
+            } else if (types.contains('route')) {
+              route = component['long_name'];
+            } else if (types.contains('locality')) {
+              city = component['long_name'];
+            } else if (types.contains('administrative_area_level_1')) {
+              state = component['long_name'];
+            } else if (types.contains('postal_code')) {
+              postalCode = component['long_name'];
+            } else if (types.contains('country')) {
+              country = component['long_name'];
+            }
+          }
+
+          setState(() {
+            _selectedLatLng = LatLng(lat, lng);
+            _addressController.text = '$streetNumber $route'.trim();
+            _cityController.text = city;
+            _stateController.text = state;
+            _postalCodeController.text = postalCode;
+            _countryController.text = country;
+          });
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error fetching location details: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoadingLocation = false;
+      });
+    }
   }
 
   @override
@@ -169,40 +256,91 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
         children: [
           Text('Location Details', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           SizedBox(height: 24),
-          _formField('Address', 'Street address', true),
+          _formField('Address', 'Street address', true, controller: _addressController),
           SizedBox(height: 16),
-          _formField('City', 'City', true),
+          _formField('City', 'City', true, controller: _cityController),
           SizedBox(height: 16),
-          _formField('State', 'State', true),
+          _formField('State', 'State', true, controller: _stateController),
           SizedBox(height: 16),
-          _formField('Postal Code', 'Postal/ZIP code', true),
+          _formField('Postal Code', 'Postal/ZIP code', true, controller: _postalCodeController),
           SizedBox(height: 16),
-          _formField('Country', 'Country', true),
+          _formField('Country', 'Country', true, controller: _countryController),
           SizedBox(height: 24),
           Text('Select Location on Map', style: TextStyle(fontWeight: FontWeight.bold)),
           SizedBox(height: 8),
           Text("Click on the map, drag the marker, or enter coordinates to set your property's location", style: TextStyle(color: Colors.grey[700])),
           SizedBox(height: 16),
-          // Use the controllers for latitude and longitude
-          _formField('Latitude', 'Enter latitude (-90 to 90)', true, helper: 'Enter a value between -90 and 90', controller: _latitudeController, onChanged: (val) {
-            final lat = double.tryParse(val);
-            if (lat != null && _selectedLatLng != null) {
-              setState(() {
-                _selectedLatLng = LatLng(lat, _selectedLatLng!.longitude);
-              });
-            }
-          }),
+          Row(
+            children: [
+              Expanded(
+                child: _formField(
+                  'Latitude',
+                  'Enter latitude (-90 to 90)',
+                  true,
+                  helper: 'Enter a value between -90 and 90',
+                  controller: _latitudeController,
+                  onChanged: (val) {
+                    final lat = double.tryParse(val);
+                    if (lat != null) {
+                      final lng = double.tryParse(_longitudeController.text);
+                      if (lng != null) {
+                        _fetchLocationFromCoordinates(lat, lng);
+                      }
+                    }
+                  },
+                ),
+              ),
+              SizedBox(width: 16),
+              Expanded(
+                child: _formField(
+                  'Longitude',
+                  'Enter longitude (-180 to 180)',
+                  true,
+                  helper: 'Enter a value between -180 and 180',
+                  controller: _longitudeController,
+                  onChanged: (val) {
+                    final lng = double.tryParse(val);
+                    if (lng != null) {
+                      final lat = double.tryParse(_latitudeController.text);
+                      if (lat != null) {
+                        _fetchLocationFromCoordinates(lat, lng);
+                      }
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
           SizedBox(height: 16),
-          _formField('Longitude', 'Enter longitude (-180 to 180)', true, helper: 'Enter a value between -180 and 180', controller: _longitudeController, onChanged: (val) {
-            final lng = double.tryParse(val);
-            if (lng != null && _selectedLatLng != null) {
-              setState(() {
-                _selectedLatLng = LatLng(_selectedLatLng!.latitude, lng);
-              });
-            }
-          }),
+          if (_isLoadingLocation)
+            Center(child: CircularProgressIndicator())
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  final lat = double.tryParse(_latitudeController.text);
+                  final lng = double.tryParse(_longitudeController.text);
+                  if (lat != null && lng != null) {
+                    _fetchLocationFromCoordinates(lat, lng);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Please enter valid coordinates')),
+                    );
+                  }
+                },
+                icon: Icon(Icons.search),
+                label: Text('Fetch Location Details'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal[700],
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
           SizedBox(height: 16),
-          // Replace map placeholder with GoogleMap
           Container(
             height: 200,
             decoration: BoxDecoration(
@@ -213,8 +351,8 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
               borderRadius: BorderRadius.circular(16),
               child: GoogleMap(
                 initialCameraPosition: CameraPosition(
-                  target: _selectedLatLng ?? LatLng(20.5937, 78.9629), // Default to India
-                  zoom: 5,
+                  target: LatLng(17.504486168645332, 78.39641334152635), // Default to Hyderabad
+                  zoom: 15,
                 ),
                 markers: _selectedLatLng != null
                     ? {
@@ -228,6 +366,7 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
                               _latitudeController.text = newPos.latitude.toStringAsFixed(6);
                               _longitudeController.text = newPos.longitude.toStringAsFixed(6);
                             });
+                            _fetchLocationFromCoordinates(newPos.latitude, newPos.longitude);
                           },
                         ),
                       }
@@ -238,9 +377,25 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
                     _latitudeController.text = latLng.latitude.toStringAsFixed(6);
                     _longitudeController.text = latLng.longitude.toStringAsFixed(6);
                   });
+                  _fetchLocationFromCoordinates(latLng.latitude, latLng.longitude);
                 },
                 onMapCreated: (controller) {
                   _mapController = controller;
+                  // Set initial position if coordinates are already entered
+                  if (_latitudeController.text.isNotEmpty && _longitudeController.text.isNotEmpty) {
+                    final lat = double.tryParse(_latitudeController.text);
+                    final lng = double.tryParse(_longitudeController.text);
+                    if (lat != null && lng != null) {
+                      controller.animateCamera(
+                        CameraUpdate.newCameraPosition(
+                          CameraPosition(
+                            target: LatLng(lat, lng),
+                            zoom: 15,
+                          ),
+                        ),
+                      );
+                    }
+                  }
                 },
                 myLocationEnabled: true,
                 myLocationButtonEnabled: true,
