@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'splash_page.dart';
 import 'home_page.dart';
 import 'search_page.dart';
@@ -16,6 +18,10 @@ Future<void> main() async {
     // Create default environment variables if .env file is not found
     dotenv.env.addAll({'SERVER_URL': 'http://localhost:3000'});
   });
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(VillaFestApp());
 }

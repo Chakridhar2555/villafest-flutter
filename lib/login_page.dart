@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'widgets/custom_app_bar.dart';
 import 'widgets/custom_bottom_nav.dart';
+import 'services/auth_service.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -13,11 +14,23 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool _obscurePassword = true;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _obscurePassword = true;
+  late AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initAuthService();
+  }
+
+  Future<void> _initAuthService() async {
+    final prefs = await SharedPreferences.getInstance();
+    _authService = AuthService(prefs);
+  }
 
   @override
   void dispose() {
@@ -27,61 +40,103 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _login() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isLoading = true;
+      });
 
-    setState(() => _isLoading = true);
-
-    try {
-      final response = await http.post(
-        Uri.parse('${dotenv.env['SERVER_URL']}/users/login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'email': _emailController.text.trim(),
-          'password': _passwordController.text,
-        }),
-      );
-
-      final data = json.decode(response.body);
-
-      if (response.statusCode == 200) {
-        // Store token
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('token', data['token']);
-
-        // Show success toast
-        Fluttertoast.showToast(
-          msg: data['message'],
-          toastLength: Toast.LENGTH_LONG,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor: Colors.white,
-          fontSize: 16.0,
+      try {
+        final response = await http.post(
+          Uri.parse('${dotenv.env['SERVER_URL']}/users/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'email': _emailController.text.trim(),
+            'password': _passwordController.text,
+          }),
         );
 
-        // Navigate back
-        Navigator.pop(context);
-      } else {
-        // Show error toast
+        final data = json.decode(response.body);
+
+        if (response.statusCode == 200) {
+          // Store token
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('token', data['token']);
+
+          // Show success toast
+          Fluttertoast.showToast(
+            msg: data['message'],
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.green,
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+
+          // Navigate to home
+          Navigator.pushReplacementNamed(context, '/home');
+        } else {
+          // Show error toast
+          Fluttertoast.showToast(
+            msg: data['message'],
+            toastLength: Toast.LENGTH_LONG,
+            gravity: ToastGravity.BOTTOM,
+            backgroundColor: Colors.red,
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+        }
+      } catch (error) {
         Fluttertoast.showToast(
-          msg: data['message'],
+          msg: 'An error occurred. Please try again.',
           toastLength: Toast.LENGTH_LONG,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.red,
           textColor: Colors.white,
           fontSize: 16.0,
         );
+      } finally {
+        setState(() {
+          _isLoading = false;
+        });
       }
-    } catch (error) {
-      Fluttertoast.showToast(
-        msg: 'An error occurred. Please try again.',
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.BOTTOM,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-        fontSize: 16.0,
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authService.signInWithGoogle();
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing in with Google: ${e.toString()}')),
       );
     } finally {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authService.signInWithApple();
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error signing in with Apple: ${e.toString()}')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -112,12 +167,18 @@ class _LoginPageState extends State<LoginPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Welcome to Villafest',
+                    'Welcome Back',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF00796B),
                     ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Sign in to continue',
+                    style: TextStyle(color: Colors.grey[700], fontSize: 16),
+                    textAlign: TextAlign.center,
                   ),
                   SizedBox(height: 24),
                   TextFormField(
@@ -161,10 +222,7 @@ class _LoginPageState extends State<LoginPage> {
                         borderSide: BorderSide(color: Colors.red),
                       ),
                       suffix: GestureDetector(
-                        onTap:
-                            () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
+                        onTap: () => setState(() => _obscurePassword = !_obscurePassword),
                         child: Text(
                           _obscurePassword ? 'Show' : 'Hide',
                           style: TextStyle(
@@ -177,9 +235,6 @@ class _LoginPageState extends State<LoginPage> {
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your password';
-                      }
-                      if (value.length < 6) {
-                        return 'Password must be at least 6 characters';
                       }
                       return null;
                     },
@@ -196,23 +251,22 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       onPressed: _isLoading ? null : _login,
-                      child:
-                          _isLoading
-                              ? SizedBox(
-                                height: 24,
-                                width: 24,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                              : Text(
-                                'Login',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  color: Colors.white,
-                                ),
+                      child: _isLoading
+                          ? SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
                               ),
+                            )
+                          : Text(
+                              'Sign in',
+                              style: TextStyle(
+                                fontSize: 20,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                   SizedBox(height: 24),
@@ -234,7 +288,7 @@ class _LoginPageState extends State<LoginPage> {
                       icon: Image.asset('assets/google_logo.png', height: 24),
                       label: Text(
                         'Continue with Google',
-                        style: TextStyle(fontSize: 18, color: Colors.black),
+                        style: TextStyle(fontSize: 18, color: Colors.black87),
                       ),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Colors.teal.shade200),
@@ -242,30 +296,46 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                      onPressed: () {},
+                      onPressed: _isLoading ? null : _signInWithGoogle,
                     ),
                   ),
                   SizedBox(height: 16),
-                  Text.rich(
-                    TextSpan(
-                      text: "Don't have an account? ",
-                      children: [
-                        WidgetSpan(
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamed(context, '/signup');
-                            },
-                            child: Text(
-                              'Sign up',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: OutlinedButton.icon(
+                      icon: Icon(Icons.apple, size: 24),
+                      label: Text(
+                        'Continue with Apple',
+                        style: TextStyle(fontSize: 18, color: Colors.black87),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        side: BorderSide(color: Colors.teal.shade200),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      onPressed: _isLoading ? null : _signInWithApple,
+                    ),
+                  ),
+                  SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Don\'t have an account?'),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/signup');
+                        },
+                        child: Text(
+                          'Sign up',
+                          style: TextStyle(
+                            color: Colors.teal[700],
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -273,7 +343,6 @@ class _LoginPageState extends State<LoginPage> {
           ),
         ),
       ),
-      bottomNavigationBar: CustomBottomNav(selectedIndex: 1),
     );
   }
 }
