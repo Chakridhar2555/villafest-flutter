@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'widgets/custom_app_bar.dart';
 import 'widgets/custom_bottom_nav.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class HostAndEarnPage extends StatefulWidget {
   @override
@@ -26,6 +27,20 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
   ];
   final List<String> _selectedRules = [];
   final TextEditingController _customRulesController = TextEditingController();
+
+  // Add controllers for latitude and longitude
+  final TextEditingController _latitudeController = TextEditingController();
+  final TextEditingController _longitudeController = TextEditingController();
+  // Add map state
+  LatLng? _selectedLatLng;
+  GoogleMapController? _mapController;
+
+  @override
+  void dispose() {
+    _latitudeController.dispose();
+    _longitudeController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -168,11 +183,72 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
           SizedBox(height: 8),
           Text("Click on the map, drag the marker, or enter coordinates to set your property's location", style: TextStyle(color: Colors.grey[700])),
           SizedBox(height: 16),
-          _formField('Latitude', 'Enter latitude (-90 to 90)', true, helper: 'Enter a value between -90 and 90'),
+          // Use the controllers for latitude and longitude
+          _formField('Latitude', 'Enter latitude (-90 to 90)', true, helper: 'Enter a value between -90 and 90', controller: _latitudeController, onChanged: (val) {
+            final lat = double.tryParse(val);
+            if (lat != null && _selectedLatLng != null) {
+              setState(() {
+                _selectedLatLng = LatLng(lat, _selectedLatLng!.longitude);
+              });
+            }
+          }),
           SizedBox(height: 16),
-          _formField('Longitude', 'Enter longitude (-180 to 180)', true, helper: 'Enter a value between -180 and 180'),
+          _formField('Longitude', 'Enter longitude (-180 to 180)', true, helper: 'Enter a value between -180 and 180', controller: _longitudeController, onChanged: (val) {
+            final lng = double.tryParse(val);
+            if (lng != null && _selectedLatLng != null) {
+              setState(() {
+                _selectedLatLng = LatLng(_selectedLatLng!.latitude, lng);
+              });
+            }
+          }),
           SizedBox(height: 16),
-          _mapPlaceholder(),
+          // Replace map placeholder with GoogleMap
+          Container(
+            height: 200,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.grey[200],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(16),
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: _selectedLatLng ?? LatLng(20.5937, 78.9629), // Default to India
+                  zoom: 5,
+                ),
+                markers: _selectedLatLng != null
+                    ? {
+                        Marker(
+                          markerId: MarkerId('selected_location'),
+                          position: _selectedLatLng!,
+                          draggable: true,
+                          onDragEnd: (newPos) {
+                            setState(() {
+                              _selectedLatLng = newPos;
+                              _latitudeController.text = newPos.latitude.toStringAsFixed(6);
+                              _longitudeController.text = newPos.longitude.toStringAsFixed(6);
+                            });
+                          },
+                        ),
+                      }
+                    : {},
+                onTap: (latLng) {
+                  setState(() {
+                    _selectedLatLng = latLng;
+                    _latitudeController.text = latLng.latitude.toStringAsFixed(6);
+                    _longitudeController.text = latLng.longitude.toStringAsFixed(6);
+                  });
+                },
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                },
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+                zoomControlsEnabled: true,
+                mapToolbarEnabled: false,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -462,7 +538,7 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
     );
   }
 
-  Widget _formField(String label, String hint, bool required, {String? helper, int maxLines = 1}) {
+  Widget _formField(String label, String hint, bool required, {String? helper, int maxLines = 1, TextEditingController? controller, ValueChanged<String>? onChanged}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -475,6 +551,8 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
         SizedBox(height: 6),
         TextField(
           maxLines: maxLines,
+          controller: controller,
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hint,
             border: OutlineInputBorder(
@@ -494,19 +572,6 @@ class _HostAndEarnPageState extends State<HostAndEarnPage> {
             child: Text(helper, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
           ),
       ],
-    );
-  }
-
-  Widget _mapPlaceholder() {
-    return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: Colors.grey[200],
-      ),
-      child: Center(
-        child: Text('Map Placeholder', style: TextStyle(color: Colors.grey[600])),
-      ),
     );
   }
 } 
